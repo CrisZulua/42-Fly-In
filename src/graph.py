@@ -37,7 +37,7 @@ class Graph:
             max_link (int): Maximum link capacity. Meaning max drones that can
             travel through the connection simultaneously
         """
-        link = Link(max_link, 0)
+        link = Link(max_link_capacity=max_link, occupancy=0)
         self._graph[from_hub][to_hub] = link
         self._graph[to_hub][from_hub] = link
 
@@ -58,7 +58,7 @@ class Graph:
             hub (str): Check neighbors for this hub
 
         Returns:
-            Dict[str, int]: Dictionary containing neighbors
-            and max link capacity
+            Dict[str, Link]: Dictionary containing neighbors
+            and their respective link information
         """
         return self._graph[hub]
