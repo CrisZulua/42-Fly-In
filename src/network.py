@@ -15,13 +15,28 @@ from src.parser import MapConfig
 from src.graph import Graph
 from src.hubs import Hub
 from typing import Dict, List, Tuple
+from dataclasses import dataclass
 import heapq
+
+
+@dataclass
+class Drone:
+    """This class holds status data for a drone travelling through the network.
+    """
+    id: str
+    waiting_at: str = "start"
+    traveling_to: str | None = None
+    arrival_time: int = 1
+    end_goal_arrival_time: float = 0
+    status: str = "waiting"  # waiting, traveling, arrived
 
 
 class Network:
     def __init__(self, config: MapConfig) -> None:
         # Init number of drones
-        self.nb_drones: int = config.nb_drones
+        self.drones: List[Drone] = [
+           Drone(id=f"D{i}") for i in range(1, config.nb_drones + 1)
+        ]
 
         # Init graph structure
         self.graph: Graph = Graph([hub.name for hub in config.hubs])
@@ -52,7 +67,7 @@ class Network:
 
     def calculate_next_step(
             self, from_hub: str, to_hub: str
-            ) -> Tuple[str, float] | None:
+            ) -> Tuple[str | None, float]:
         """This function executes Dijkstra's algorithm to get the next
         step of the shortest path possible to the goal hub.
 
@@ -127,8 +142,19 @@ class Network:
                     parent[neighbor] = curr
                     heapq.heappush(heap, (new_dist, neighbor))
 
-        return None
+        return (None, 0.0)
 
     def dispatch_drones(self) -> None:
+        turn = 0
 
+        # Iterate while there is at least one drone that has not arrived
+        # at its destination
+        while any(drone.status != "arrived" for drone in self.drones):
+            turn += 1
+            # 1 - Process drones arriving this turn
+
+            # 2 - Schedule drones to their next destinations based on their
+            # current status
+
+            break
         return

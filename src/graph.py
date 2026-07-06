@@ -62,3 +62,17 @@ class Graph:
             and their respective link information
         """
         return self._graph[hub]
+
+    def update_link(self, from_hub: str, to_hub: str, occupancy_change: int
+                    ) -> None:
+        """Update the occupancy of a link between two hubs.
+
+        Args:
+            from_hub (str): The starting hub of the link.
+            to_hub (str): The destination hub of the link.
+            occupancy_change (int): The change in occupancy
+            (positive or negative).
+        """
+        if to_hub in self._graph[from_hub]:
+            link = self._graph[from_hub][to_hub]
+            link.occupancy += occupancy_change
