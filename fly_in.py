@@ -22,4 +22,4 @@ if __name__ == "__main__":
 
     config: MapConfig = parse_map_file(sys.argv[1])
     network: Network = Network(config)
-    print(network.calculate_next_step('start', 'goal'))
+    print(network.dispatch_drones())

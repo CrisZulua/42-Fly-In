@@ -24,11 +24,13 @@ class Drone:
     """This class holds status data for a drone travelling through the network.
     """
     id: str
+    status: str = "waiting"  # waiting, traveling, arrived
     waiting_at: str = "start"
     traveling_to: str | None = None
     arrival_time: int = 1
-    end_goal_arrival_time: float = 0
-    status: str = "waiting"  # waiting, traveling, arrived
+    total_path_cost: float = float('inf')
+    # How deep is the drone in the network (number of hops to end goal)
+    deepness: float = 0
 
 
 class Network:
@@ -112,8 +114,8 @@ class Network:
                     path.append(aux)
                     aux = parent[aux]
                 path.reverse()
-                next_step = path[1]
                 print(path)
+                next_step = path[1]
                 return next_step, float(curr_dist)
 
             visited.add(curr)
@@ -144,17 +146,47 @@ class Network:
 
         return (None, 0.0)
 
-    def dispatch_drones(self) -> None:
-        turn = 0
+    def dispatch_drones(self) -> int:
+        turn: int = 0
 
         # Iterate while there is at least one drone that has not arrived
         # at its destination
         while any(drone.status != "arrived" for drone in self.drones):
+            # 1 - Process drones ready to depart from their current hub
+            # ideally this drones should be the ones that are deepest in
+            # the network
+            # Priotiry goes: Most deep in the network with
+            # the longest path cost to end goal
+            self.drones.sort(key=lambda d: d.total_path_cost, reverse=True)
+            self.drones.sort(key=lambda d: d.deepness, reverse=True)
+            for drone in self.drones:
+                print(drone)
+                if drone.status == "waiting":
+                    next_step, path_cost = self.calculate_next_step(
+                        drone.waiting_at, "goal"
+                    )
+                    if next_step is None:
+                        continue
+                    # Next step is available, send the drone
+                    self.hubs[drone.waiting_at].current_drones -= 1
+                    step_cost = self.get_weight(self.hubs[next_step].zone)
+                    # Check link travel time equal to 2 turns
+                    if step_cost > 1:
+                        drone.status = "traveling"
+                        drone.deepness += 0.5
+                        drone.traveling_to = next_step
+                        self.graph.update_link(
+                            drone.waiting_at, next_step, 1
+                        )
+                    else:
+                        drone.deepness += 1
+                        drone.waiting_at = next_step
+                        self.hubs[next_step].current_drones += 1
+                    drone.total_path_cost = path_cost
+                    drone.arrival_time = turn + step_cost
+                    if next_step == "goal":
+                        drone.status = "arrived"
             turn += 1
-            # 1 - Process drones arriving this turn
-
-            # 2 - Schedule drones to their next destinations based on their
-            # current status
-
-            break
-        return
+            print(turn)
+            input("Press Enter to continue to next turn...")
+        return turn
