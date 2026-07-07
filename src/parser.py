@@ -141,7 +141,7 @@ def validate_hubs(hubs: List[Hub]) -> None:
     return
 
 
-def get_hubs_data(map: List[Tuple[int, str]]) -> List[Hub]:
+def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
     """Get hubs data. Name, coords and metadata from
     map configuration lines
 
@@ -201,6 +201,8 @@ def get_hubs_data(map: List[Tuple[int, str]]) -> List[Hub]:
             except ValueError as e:
                 raise ValueError(f"Line {num}: "
                                  f"Hub not properly configured! -> {e}")
+            if name in ("start", "goal", "impossible_goal"):
+                max_drones = nb_drones
             new_hub = Hub(
                 name=name,
                 coords=coords,
@@ -316,7 +318,7 @@ def parse_map_file(file: str) -> MapConfig:
         map = load_map(file)
 
         nb_drones = get_nb_drones(map[0][1])
-        hubs = get_hubs_data(map)
+        hubs = get_hubs_data(map, nb_drones)
         connections = get_connections_data(map, hubs)
 
         return MapConfig(

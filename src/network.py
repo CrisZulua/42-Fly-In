@@ -114,28 +114,29 @@ class Network:
                     path.append(aux)
                     aux = parent[aux]
                 path.reverse()
-                print(path)
+                # print(path)
                 next_step = path[1]
+                # Now we check link capacity and hub capacity for the next step
+                links = self.graph.get_neighbors(from_hub)
+                # Check if the neighbor link is at max flow
+                link_cap = links[next_step].max_link_capacity
+                link_occ = links[next_step].occupancy
+                if link_occ >= link_cap:
+                    return (None, 0.0)
+                # Check if neighbor hub has available capacity
+                nstep_hub = self.hubs[next_step]
+                nstep_occ = nstep_hub.current_drones
+                nstep_cap = nstep_hub.max_drones
+                if nstep_occ >= nstep_cap:
+                    return (None, 0.0)
                 return next_step, float(curr_dist)
 
             visited.add(curr)
-            curr_neighbors = self.graph.get_neighbors(curr)
 
             for neighbor in self.graph.get_neighbors(curr):
                 weight = self.get_weight(self.hubs[neighbor].zone)
                 # Protect against blocked zones
                 if weight < 1:
-                    continue
-                # Check if the neighbor link is at max flow
-                link_cap = curr_neighbors[neighbor].max_link_capacity
-                link_occ = curr_neighbors[neighbor].occupancy
-                if link_occ >= link_cap:
-                    continue
-                # Check if neighbor hub has available capacity
-                nbor_hub = self.hubs[neighbor]
-                nbor_occ = nbor_hub.current_drones
-                nbor_cap = nbor_hub.max_drones
-                if nbor_occ >= nbor_cap:
                     continue
 
                 new_dist = curr_dist + weight
@@ -152,6 +153,7 @@ class Network:
         # Iterate while there is at least one drone that has not arrived
         # at its destination
         while any(drone.status != "arrived" for drone in self.drones):
+            print(f"\033[94mTurn {turn + 1}:\033[0m")
             # 1 - Process drones ready to depart from their current hub
             # ideally this drones should be the ones that are deepest in
             # the network
@@ -160,7 +162,6 @@ class Network:
             self.drones.sort(key=lambda d: d.total_path_cost, reverse=True)
             self.drones.sort(key=lambda d: d.deepness, reverse=True)
             for drone in self.drones:
-                print(drone)
                 if drone.status == "waiting":
                     next_step, path_cost = self.calculate_next_step(
                         drone.waiting_at, "goal"
@@ -172,6 +173,10 @@ class Network:
                     step_cost = self.get_weight(self.hubs[next_step].zone)
                     # Check link travel time equal to 2 turns
                     if step_cost > 1:
+                        print(
+                            f"{drone.id}-{drone.waiting_at}-{next_step}",
+                            end=" "
+                            )
                         drone.status = "traveling"
                         drone.deepness += 0.5
                         drone.traveling_to = next_step
@@ -179,6 +184,7 @@ class Network:
                             drone.waiting_at, next_step, 1
                         )
                     else:
+                        print(f"{drone.id}-{next_step}", end=" ")
                         drone.deepness += 1
                         drone.waiting_at = next_step
                         self.hubs[next_step].current_drones += 1
@@ -187,6 +193,5 @@ class Network:
                     if next_step == "goal":
                         drone.status = "arrived"
             turn += 1
-            print(turn)
-            input("Press Enter to continue to next turn...")
+            input()
         return turn
