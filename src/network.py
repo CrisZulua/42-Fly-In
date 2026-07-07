@@ -86,7 +86,7 @@ class Network:
             return from_hub, 0
 
         # Keep track of the shortest path and distance to each hub
-        parent: Dict[str, str | None] = {}
+        parent: Dict[str, List[str]] = {}
         # Initialize distances to infinity, except for the starting hub
         dist: Dict[str, float] = {hub: float('inf') for hub in self.hubs}
         dist[from_hub] = 0
@@ -96,7 +96,7 @@ class Network:
         # Use a priority queue to explore the graph
         # based on the shortest distance
         heap: List[Tuple[int, str]] = [(0, from_hub)]
-        parent[from_hub] = None
+        parent[from_hub] = []
 
         while heap:
             curr_dist, curr = heapq.heappop(heap)
@@ -107,29 +107,37 @@ class Network:
             if curr == to_hub:
                 # Goal has been reached, return the next step in the path and
                 # the total distance to the destination
-                path: List[str] = []
-                aux: str | None = curr
-                # Backtrack to find the next step in the path
-                while aux is not None:
-                    path.append(aux)
-                    aux = parent[aux]
-                path.reverse()
-                # print(path)
-                next_step = path[1]
-                # Now we check link capacity and hub capacity for the next step
-                links = self.graph.get_neighbors(from_hub)
-                # Check if the neighbor link is at max flow
-                link_cap = links[next_step].max_link_capacity
-                link_occ = links[next_step].occupancy
-                if link_occ >= link_cap:
-                    return (None, 0.0)
-                # Check if neighbor hub has available capacity
-                nstep_hub = self.hubs[next_step]
-                nstep_occ = nstep_hub.current_drones
-                nstep_cap = nstep_hub.max_drones
-                if nstep_occ >= nstep_cap:
-                    return (None, 0.0)
-                return next_step, float(curr_dist)
+                next_steps: List[str] = []
+                frontier: List[str] = [curr]
+                # Find the next available step in the path
+                while frontier:
+                    node = frontier.pop()
+
+                    for p in parent[node]:
+                        if p == from_hub:
+                            next_steps.append(node)
+                        else:
+                            if p in frontier:
+                                continue
+                            frontier.append(p)
+
+                for step in next_steps:
+                    # Now we check link capacity and hub capacity
+                    # for the next step
+                    links = self.graph.get_neighbors(from_hub)
+                    # Check if the neighbor link is at max flow
+                    link_cap = links[step].max_link_capacity
+                    link_occ = links[step].occupancy
+                    if link_occ >= link_cap:
+                        continue
+                    # Check if neighbor hub has available capacity
+                    nstep_hub = self.hubs[step]
+                    nstep_occ = nstep_hub.current_drones
+                    nstep_cap = nstep_hub.max_drones
+                    if nstep_occ >= nstep_cap:
+                        continue
+                    return step, float(curr_dist)
+                return (None, 0)
 
             visited.add(curr)
 
@@ -144,7 +152,9 @@ class Network:
                 new_dist = curr_dist + weight
                 if new_dist <= dist[neighbor]:
                     dist[neighbor] = new_dist
-                    parent[neighbor] = curr
+                    if parent.get(neighbor) is None:
+                        parent[neighbor] = []
+                    parent[neighbor].append(curr)
                     heapq.heappush(heap, (new_dist, neighbor))
 
         return (None, 0.0)
@@ -212,5 +222,6 @@ class Network:
                         else:
                             drone.status = "waiting"
             turn += 1
-            input()
+            print()
+            # input()
         return turn

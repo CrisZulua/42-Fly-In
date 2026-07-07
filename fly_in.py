@@ -11,16 +11,17 @@
 #                                                                             #
 # ########################################################################### #
 
-# import sys
+import sys
 from src.parser import parse_map_file, MapConfig
 from src.network import Network
 
 if __name__ == "__main__":
-    # if len(sys.argv) != 2:
-    #     print("Usage: python fly_in.py <input_file>")
-    #     sys.exit(1)
+    if len(sys.argv) != 2:
+        print("Usage: python fly_in.py <input_file>")
+        sys.exit(1)
 
-    config: MapConfig = parse_map_file("maps/easy/02_simple_fork.txt")
+    # config: MapConfig = parse_map_file("maps/easy/02_simple_fork.txt")
+    config: MapConfig = parse_map_file(sys.argv[1])
     network: Network = Network(config)
     # for hub in network.hubs.values():
     #     print(hub)
