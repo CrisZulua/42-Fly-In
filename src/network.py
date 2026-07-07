@@ -26,7 +26,7 @@ class Drone:
     id: str
     status: str = "waiting"  # waiting, traveling, arrived
     waiting_at: str = "start"
-    traveling_to: str | None = None
+    traveling_to: str = "goal"
     arrival_time: int = 1
     total_path_cost: float = float('inf')
     # How deep is the drone in the network (number of hops to end goal)
@@ -138,9 +138,11 @@ class Network:
                 # Protect against blocked zones
                 if weight < 1:
                     continue
+                if neighbor in visited:
+                    continue
 
                 new_dist = curr_dist + weight
-                if new_dist < dist[neighbor]:
+                if new_dist <= dist[neighbor]:
                     dist[neighbor] = new_dist
                     parent[neighbor] = curr
                     heapq.heappush(heap, (new_dist, neighbor))
@@ -161,6 +163,8 @@ class Network:
             # the longest path cost to end goal
             self.drones.sort(key=lambda d: d.total_path_cost, reverse=True)
             self.drones.sort(key=lambda d: d.deepness, reverse=True)
+            # self.drones.sort(key=lambda d: d.status == "traveling",
+            #                  reverse=True)
             for drone in self.drones:
                 if drone.status == "waiting":
                     next_step, path_cost = self.calculate_next_step(
@@ -192,6 +196,21 @@ class Network:
                     drone.arrival_time = turn + step_cost
                     if next_step == "goal":
                         drone.status = "arrived"
+                if drone.status == "traveling":
+                    if drone.arrival_time == turn + 1:
+                        # Drone has arrived at its destination
+                        print(f"{drone.id}-{drone.traveling_to}", end=" ")
+                        self.hubs[drone.traveling_to].current_drones += 1
+                        self.graph.update_link(
+                            drone.waiting_at, drone.traveling_to, -1
+                        )
+                        drone.waiting_at = drone.traveling_to
+                        drone.traveling_to = ""
+                        drone.deepness += 0.5
+                        if drone.waiting_at == "goal":
+                            drone.status = "arrived"
+                        else:
+                            drone.status = "waiting"
             turn += 1
             input()
         return turn
