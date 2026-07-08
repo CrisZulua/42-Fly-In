@@ -12,8 +12,12 @@
 # ########################################################################### #
 
 import sys
+import os
 from src.parser import parse_map_file, MapConfig
 from src.network import Network
+from src.visuals import visuals
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -31,3 +35,5 @@ if __name__ == "__main__":
     print("\033[34mNetwork Statistics\033[0m")
     for k, v in statistics.items():
         print(f"{k}: {v}")
+
+    visuals(network)
