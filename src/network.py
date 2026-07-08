@@ -16,6 +16,7 @@ from src.graph import Graph
 from src.hubs import Hub
 from typing import Dict, List, Tuple
 from dataclasses import dataclass
+from functools import reduce
 import heapq
 
 
@@ -29,7 +30,7 @@ class Drone:
     traveling_to: str = "goal"
     arrival_time: int = 1
     total_path_cost: float = 0
-    # How deep is the drone in the network (number of hops to end goal)
+    # How deep is the drone in the network (number of hops taken)
     deepness: float = 0
 
 
@@ -46,6 +47,8 @@ class Network:
 
         # Init hubs data-holder
         self.hubs: Dict[str, Hub] = {hub.name: hub for hub in config.hubs}
+
+        self.total_turns: int = 0
 
     @staticmethod
     def get_weight(zone: str) -> int:
@@ -159,8 +162,11 @@ class Network:
 
         return (None, 0.0)
 
-    def dispatch_drones(self) -> int:
+    def dispatch_drones(self) -> str:
         turn: int = 0
+        schedule: str = ""
+        moves_per_turn: int = 0
+        first: bool = True
 
         # Iterate while there is at least one drone that has not arrived
         # at its destination
@@ -169,7 +175,8 @@ class Network:
             # 1 - Process drones traveling and arriving this turn
             for drone in self.drones:
                 if drone.status == "traveling" and drone.arrival_time == turn:
-                    print(f"{drone.id}-{drone.traveling_to}", end=" ")
+                    moves_per_turn += 1
+                    schedule += f"{drone.id}-{drone.traveling_to} "
                     # Drone has arrived at its destination
                     self.graph.update_link(
                         drone.waiting_at, drone.traveling_to, -1
@@ -181,12 +188,13 @@ class Network:
                         drone.status = "arrived"
                     else:
                         drone.status = "waiting"
-
-            print()
+            if first is True:
+                first = False
+            else:
+                schedule += f"\033[32m<>\033[0m Moves: {moves_per_turn}\n"
             if all(drone.status == "arrived" for drone in self.drones):
                 break
-            # input()
-            print(f"\033[94mTurn {turn}:\033[0m")
+            moves_per_turn = 0
             # ideally this drones should be the ones that are deepest in
             # the network
             # Priotiry goes: Most deep in the network
@@ -196,7 +204,7 @@ class Network:
             # Process drones waiting at hubs and dispatch them
             for drone in self.drones:
                 if drone.status == "waiting":
-                    next_step, path_cost = self.calculate_next_step(
+                    next_step, _ = self.calculate_next_step(
                         drone.waiting_at, "goal"
                     )
                     if next_step is None:
@@ -207,7 +215,7 @@ class Network:
                     # Update drone status and path cost
                     drone.status = "traveling"
                     drone.traveling_to = next_step
-                    drone.total_path_cost += path_cost
+                    drone.total_path_cost += step_cost
                     drone.arrival_time = turn + step_cost
                     # Reserve link capacity and hub capacity
                     self.graph.update_link(
@@ -216,10 +224,26 @@ class Network:
                     self.hubs[next_step].current_drones += 1
                     # Check link travel time equal to 2 turns
                     if step_cost > 1:
-                        print(
-                            f"{drone.id}-{drone.waiting_at}-{next_step}",
-                            end=" "
+                        schedule += (
+                            f"{drone.id}-{drone.waiting_at}-{next_step} "
                             )
+                        moves_per_turn += 1
                         drone.deepness += 1
             turn += 1
-        return turn
+        self.total_turns = turn
+        return schedule
+
+    def get_statistics(self) -> Dict[str, float]:
+        stats: Dict[str, float] = {}
+        # Total turns
+        stats["total_turns"] = self.total_turns
+        # Total path cost
+        total_path_cost = reduce(
+            lambda x, y: x + y,
+            [d.total_path_cost for d in self.drones]
+        )
+        stats['total_path_cost'] = total_path_cost
+        # Average turn cost per drone
+        stats['avg_cost'] = total_path_cost / len(self.drones)
+
+        return stats

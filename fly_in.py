@@ -20,9 +20,14 @@ if __name__ == "__main__":
         print("Usage: python fly_in.py <input_file>")
         sys.exit(1)
 
-    # config: MapConfig = parse_map_file("maps/easy/02_simple_fork.txt")
     config: MapConfig = parse_map_file(sys.argv[1])
     network: Network = Network(config)
-    # for hub in network.hubs.values():
-    #     print(hub)
-    print(f"Total turns: {network.dispatch_drones()}")
+
+    schedule: str = network.dispatch_drones()
+    statistics = network.get_statistics()
+
+    print("\033[34mNetwork Schedule\033[0m")
+    print(schedule)
+    print("\033[34mNetwork Statistics\033[0m")
+    for k, v in statistics.items():
+        print(f"{k}: {v}")
