@@ -3,6 +3,7 @@ from src.network import Network
 from src.hubs import Hub
 from typing import Dict, List, Tuple
 from collections.abc import Callable
+import sys
 
 
 def create_coordinate_converter(
@@ -10,7 +11,7 @@ def create_coordinate_converter(
         width: int,
         height: int,
         margin: int = 100
-        ) -> Callable:
+        ) -> Callable[[Tuple[int, int]], Tuple[int, int]]:
     """
     Creates a function that converts graph coordinates to pygame coordinates.
 
@@ -100,7 +101,7 @@ def draw_hubs(
         hubs: Dict[str, Hub],
         screen: pygame.Surface,
         font: pygame.font.Font,
-        coord_converter: Callable
+        coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
         ) -> None:
 
     for name, hub in hubs.items():
@@ -119,33 +120,78 @@ def draw_hubs(
         text = font.render(
             name,
             True,
+            (225, 225, 225)
+        )
+
+        screen.blit(
+            text,
+            (coords[0] - (radius / 2), coords[1] - 5)
+        )
+
+
+def draw_links(
+        network: Network,
+        screen: pygame.Surface,
+        coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
+        ) -> None:
+    for name, hub in network.hubs.items():
+        curr_coord = coord_converter(hub.coords)
+        for neighbor, link in network.graph.get_neighbors(name).items():
+            neighbor_coord = coord_converter(network.hubs[neighbor].coords)
+            pygame.draw.line(
+                screen,
+                (180, 180, 180),
+                curr_coord,
+                neighbor_coord,
+                4 * link.max_link_capacity
+            )
+
+
+def draw_drones(drones: Dict[str, str],
+                hubs: Dict[str, Hub],
+                screen: pygame.Surface,
+                font: pygame.font.Font,
+                coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
+                ) -> None:
+    for drone, node in drones.items():
+        coord = coord_converter(hubs[node].coords)
+        pygame.draw.circle(
+            screen,
+            (50, 50, 125),
+            coord,
+            10
+        )
+
+        text = font.render(
+            drone,
+            True,
             (255, 255, 255)
         )
 
         screen.blit(
             text,
-            coords
+            (coord[0] - 5, coord[1] - 2)
         )
+    return
 
 
 def visuals(network: Network) -> None:
     # Initialize pygame
     pygame.init()
 
-    font = pygame.font.Font(None, 24)
+    font = pygame.font.Font(None, 20)
+    font.set_bold(True)
+    drone_font = pygame.font.Font(None, 14)
+    drone_font.set_bold(True)
+    turn_font = pygame.font.Font(None, 36)
+    turn_font.set_bold(True)
 
     # Create window
     WIDTH = 1920
     HEIGHT = 1080
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Blue Screen")
-
-    # Create coordinate converter
-    coord_converter = create_coordinate_converter(
-        [hub for hub in network.hubs.values()],
-        WIDTH,
-        HEIGHT
-    )
+    pygame.display.set_caption("Network for map "
+                               f"{sys.argv[1].split('/', 1)[-1]}")
 
     # Define colors (RGB)
     BACKGROUND = (25, 30, 45)
@@ -154,17 +200,54 @@ def visuals(network: Network) -> None:
     running = True
     clock = pygame.time.Clock()
 
+    # States Set-up
+    # Create coordinate converter
+    coord_converter = create_coordinate_converter(
+        [hub for hub in network.hubs.values()],
+        WIDTH,
+        HEIGHT
+    )
+
+    # Drone states set-up
+    drones: Dict[str, str] = {drone.id: 'start' for drone in network.drones}
+
+    turn: int = 0
+
     while running:
 
         # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    # update drones states
+                    for drone, state in network.turns_moves[turn].items():
+                        drones[drone] = state
+                    turn += 1
+                    if turn > network.total_turns:
+                        for drone in drones:
+                            drones[drone] = "start"
+                            turn = 0
+                if event.key == pygame.K_q:
+                    running = False
 
         # Draw
         screen.fill(BACKGROUND)
         # Draw Objects
+        draw_links(network, screen, coord_converter)
         draw_hubs(network.hubs, screen, font, coord_converter)
+        draw_drones(drones, network.hubs, screen, drone_font, coord_converter)
+        turn_text = turn_font.render(
+            f"Turn: {turn}",
+            True,
+            (255, 255, 255)
+        )
+
+        screen.blit(
+            turn_text,
+            (20, 20)
+        )
         # Update display
         pygame.display.flip()
 

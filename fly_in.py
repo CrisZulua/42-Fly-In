@@ -12,12 +12,9 @@
 # ########################################################################### #
 
 import sys
-import os
 from src.parser import parse_map_file, MapConfig
 from src.network import Network
 from src.visuals import visuals
-
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -25,6 +22,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     config: MapConfig = parse_map_file(sys.argv[1])
+    # config: MapConfig = parse_map_file("maps/easy/01_linear_path.txt")
     network: Network = Network(config)
 
     schedule: str = network.dispatch_drones()

@@ -52,6 +52,8 @@ class Network:
 
         self.total_turns: int = 0
 
+        self.turns_moves: List[Dict[str, str]] = []
+
     @staticmethod
     def get_weight(zone: str) -> int:
         """Gets the weight of the link (Turns cost for this link)
@@ -169,6 +171,7 @@ class Network:
         schedule: str = ""
         moves_per_turn: int = 0
         first: bool = True
+        self.turns_moves.append({})
 
         # Iterate while there is at least one drone that has not arrived
         # at its destination
@@ -187,6 +190,7 @@ class Network:
                     drone.waiting_at = drone.traveling_to
                     drone.traveling_to = ""
                     drone.deepness += 1
+                    self.turns_moves[turn - 1][drone.id] = drone.waiting_at
                     if drone.waiting_at == "goal":
                         drone.status = "arrived"
                     else:
@@ -230,10 +234,13 @@ class Network:
                         schedule += (
                             f"{drone.id}-{drone.waiting_at}-{next_step} "
                             )
+                        self.turns_moves[turn][
+                            drone.id] = f"{drone.waiting_at}-{next_step}"
                         drone.path.append(f"{drone.waiting_at}-{next_step}")
                         moves_per_turn += 1
                         drone.deepness += 1
             turn += 1
+            self.turns_moves.append({})
         self.total_turns = turn
         return schedule
 
