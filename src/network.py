@@ -28,7 +28,7 @@ class Drone:
     waiting_at: str = "start"
     traveling_to: str = "goal"
     arrival_time: int = 1
-    total_path_cost: float = float('inf')
+    total_path_cost: float = 0
     # How deep is the drone in the network (number of hops to end goal)
     deepness: float = 0
 
@@ -165,16 +165,35 @@ class Network:
         # Iterate while there is at least one drone that has not arrived
         # at its destination
         while any(drone.status != "arrived" for drone in self.drones):
-            print(f"\033[94mTurn {turn + 1}:\033[0m")
-            # 1 - Process drones ready to depart from their current hub
+
+            # 1 - Process drones traveling and arriving this turn
+            for drone in self.drones:
+                if drone.status == "traveling" and drone.arrival_time == turn:
+                    print(f"{drone.id}-{drone.traveling_to}", end=" ")
+                    # Drone has arrived at its destination
+                    self.graph.update_link(
+                        drone.waiting_at, drone.traveling_to, -1
+                    )
+                    drone.waiting_at = drone.traveling_to
+                    drone.traveling_to = ""
+                    drone.deepness += 1
+                    if drone.waiting_at == "goal":
+                        drone.status = "arrived"
+                    else:
+                        drone.status = "waiting"
+
+            print()
+            if all(drone.status == "arrived" for drone in self.drones):
+                break
+            # input()
+            print(f"\033[94mTurn {turn}:\033[0m")
             # ideally this drones should be the ones that are deepest in
             # the network
-            # Priotiry goes: Most deep in the network with
-            # the longest path cost to end goal
-            self.drones.sort(key=lambda d: d.total_path_cost, reverse=True)
+            # Priotiry goes: Most deep in the network
             self.drones.sort(key=lambda d: d.deepness, reverse=True)
-            # self.drones.sort(key=lambda d: d.status == "traveling",
-            #                  reverse=True)
+
+            # 2 - Start scheduling next turn arrivals
+            # Process drones waiting at hubs and dispatch them
             for drone in self.drones:
                 if drone.status == "waiting":
                     next_step, path_cost = self.calculate_next_step(
@@ -183,45 +202,24 @@ class Network:
                     if next_step is None:
                         continue
                     # Next step is available, send the drone
-                    self.hubs[drone.waiting_at].current_drones -= 1
                     step_cost = self.get_weight(self.hubs[next_step].zone)
+                    self.hubs[drone.waiting_at].current_drones -= 1
+                    # Update drone status and path cost
+                    drone.status = "traveling"
+                    drone.traveling_to = next_step
+                    drone.total_path_cost += path_cost
+                    drone.arrival_time = turn + step_cost
+                    # Reserve link capacity and hub capacity
+                    self.graph.update_link(
+                            drone.waiting_at, next_step, 1
+                        )
+                    self.hubs[next_step].current_drones += 1
                     # Check link travel time equal to 2 turns
                     if step_cost > 1:
                         print(
                             f"{drone.id}-{drone.waiting_at}-{next_step}",
                             end=" "
                             )
-                        drone.status = "traveling"
-                        drone.deepness += 0.5
-                        drone.traveling_to = next_step
-                        self.graph.update_link(
-                            drone.waiting_at, next_step, 1
-                        )
-                    else:
-                        print(f"{drone.id}-{next_step}", end=" ")
                         drone.deepness += 1
-                        drone.waiting_at = next_step
-                        self.hubs[next_step].current_drones += 1
-                    drone.total_path_cost = path_cost
-                    drone.arrival_time = turn + step_cost
-                    if next_step == "goal":
-                        drone.status = "arrived"
-                if drone.status == "traveling":
-                    if drone.arrival_time == turn + 1:
-                        # Drone has arrived at its destination
-                        print(f"{drone.id}-{drone.traveling_to}", end=" ")
-                        self.hubs[drone.traveling_to].current_drones += 1
-                        self.graph.update_link(
-                            drone.waiting_at, drone.traveling_to, -1
-                        )
-                        drone.waiting_at = drone.traveling_to
-                        drone.traveling_to = ""
-                        drone.deepness += 0.5
-                        if drone.waiting_at == "goal":
-                            drone.status = "arrived"
-                        else:
-                            drone.status = "waiting"
             turn += 1
-            print()
-            # input()
         return turn

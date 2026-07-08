@@ -25,4 +25,4 @@ if __name__ == "__main__":
     network: Network = Network(config)
     # for hub in network.hubs.values():
     #     print(hub)
-    print(network.dispatch_drones())
+    print(f"Total turns: {network.dispatch_drones()}")
