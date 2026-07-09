@@ -23,17 +23,22 @@ if __name__ == "__main__":
 
     config: MapConfig = parse_map_file(sys.argv[1])
     # config: MapConfig = parse_map_file("maps/easy/01_linear_path.txt")
-    print(config.hubs)
-    print(config.connections)
+    # Execute Dijkstra to find best possible paths
     network: Network = Network(config)
+    network.find_shortest_paths()
 
+    # Execute drone dispatcher
     schedule: str = network.dispatch_drones()
+
+    # Get dispatcher network statistics after dispatcher execution
     statistics = network.get_statistics()
 
+    # Print results
     print("\033[34mNetwork Schedule\033[0m")
     print(schedule)
     print("\033[34mNetwork Statistics\033[0m")
     for k, v in statistics.items():
         print(f"{k}: {v}")
 
+    # Display simulation
     visuals(network)

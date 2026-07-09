@@ -53,6 +53,8 @@ class Network:
 
         self.turns_moves: List[Dict[str, str]] = []
 
+        self.node_parents: Dict[str, List[str]] = {}
+
     @staticmethod
     def get_weight(zone: str) -> int:
         """Gets the weight of the link (Turns cost for this link)
@@ -73,24 +75,8 @@ class Network:
             case _:
                 return 0
 
-    def calculate_next_step(
-            self, from_hub: str, to_hub: str
-            ) -> Tuple[str | None, float]:
-        """This function executes Dijkstra's algorithm to get the next
-        step of the shortest path possible to the goal hub.
-
-        Args:
-            from_hub (str): Starting hub
-            to_hub (str): End goal hub
-
-        Returns:
-            Tuple[str, float] | None: Returns (hub_name, cost_to_end_goal)
-            or None if there is no possible way to get to the end goal
-        """
-        # Check if start and destination are the same hub
-        if from_hub == to_hub:
-            return from_hub, 0
-
+    def find_shortest_paths(self) -> None:
+        from_hub = "start"
         # Keep track of the shortest path and distance to each hub
         parent: Dict[str, List[str]] = {}
         # Initialize distances to infinity, except for the starting hub
@@ -110,41 +96,6 @@ class Network:
             if curr in visited:
                 continue
 
-            if curr == to_hub:
-                # Goal has been reached, return the next step in the path and
-                # the total distance to the destination
-                next_steps: List[str] = []
-                frontier: List[str] = [curr]
-                # Find the next available step in the path
-                while frontier:
-                    node = frontier.pop()
-
-                    for p in parent[node]:
-                        if p == from_hub:
-                            next_steps.append(node)
-                        else:
-                            if p in frontier:
-                                continue
-                            frontier.append(p)
-
-                for step in next_steps:
-                    # Now we check link capacity and hub capacity
-                    # for the next step
-                    links = self.graph.get_neighbors(from_hub)
-                    # Check if the neighbor link is at max flow
-                    link_cap = links[step].max_link_capacity
-                    link_occ = links[step].occupancy
-                    if link_occ >= link_cap:
-                        continue
-                    # Check if neighbor hub has available capacity
-                    nstep_hub = self.hubs[step]
-                    nstep_occ = nstep_hub.current_drones
-                    nstep_cap = nstep_hub.max_drones
-                    if nstep_occ >= nstep_cap:
-                        continue
-                    return step, float(curr_dist)
-                return (None, 0)
-
             visited.add(curr)
 
             for neighbor in self.graph.get_neighbors(curr):
@@ -162,8 +113,49 @@ class Network:
                         parent[neighbor] = []
                     parent[neighbor].append(curr)
                     heapq.heappush(heap, (new_dist, neighbor))
+        self.node_parents = parent
 
-        return (None, 0.0)
+    def calculate_next_step(
+            self, from_hub: str
+            ) -> str | None:
+        to_hub = "goal"
+        # Check if start and destination are the same hub
+        if from_hub == to_hub:
+            return from_hub
+
+        # Goal has been reached, return the next step in the path and
+        # the total distance to the destination
+        next_steps: List[str] = []
+        frontier: List[str] = [to_hub]
+        # Find the next available step in the path
+        while frontier:
+            node = frontier.pop()
+
+            for parent in self.node_parents[node]:
+                if parent == from_hub:
+                    next_steps.append(node)
+                else:
+                    if parent in frontier:
+                        continue
+                    frontier.append(parent)
+
+        for step in next_steps:
+            # Now we check link capacity and hub capacity
+            # for the next step
+            links = self.graph.get_neighbors(from_hub)
+            # Check if the neighbor link is at max flow
+            link_cap = links[step].max_link_capacity
+            link_occ = links[step].occupancy
+            if link_occ >= link_cap:
+                continue
+            # Check if neighbor hub has available capacity
+            nstep_hub = self.hubs[step]
+            nstep_occ = nstep_hub.current_drones
+            nstep_cap = nstep_hub.max_drones
+            if nstep_occ >= nstep_cap:
+                continue
+            return step
+        return None
 
     def dispatch_drones(self) -> str:
         turn: int = 0
@@ -209,8 +201,8 @@ class Network:
             # Process drones waiting at hubs and dispatch them
             for drone in self.drones:
                 if drone.status == "waiting":
-                    next_step, _ = self.calculate_next_step(
-                        drone.waiting_at, "goal"
+                    next_step = self.calculate_next_step(
+                        drone.waiting_at
                     )
                     if next_step is None:
                         continue
