@@ -12,7 +12,7 @@
 # ########################################################################### #
 
 import sys
-from src.parser import parse_map_file, MapConfig
+from src.map_parser import parse_map_file, MapConfig
 from src.network import Network
 from src.visuals import visuals
 
@@ -23,6 +23,8 @@ if __name__ == "__main__":
 
     config: MapConfig = parse_map_file(sys.argv[1])
     # config: MapConfig = parse_map_file("maps/easy/01_linear_path.txt")
+    print(config.hubs)
+    print(config.connections)
     network: Network = Network(config)
 
     schedule: str = network.dispatch_drones()

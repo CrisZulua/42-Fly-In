@@ -1,9 +1,15 @@
-import pygame
 from src.network import Network
 from src.hubs import Hub
 from typing import Dict, List, Tuple
 from collections.abc import Callable
 import sys
+import os
+try:
+    os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+    import pygame
+except ImportError as e:
+    print(e)
+    exit(1)
 
 
 def create_coordinate_converter(
@@ -153,12 +159,40 @@ def draw_drones(drones: Dict[str, str],
                 font: pygame.font.Font,
                 coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
                 ) -> None:
+    x_offset_positions: Dict[str, int] = {}
+    y_offset_positions: Dict[str, int] = {}
+
     for drone, node in drones.items():
-        coord = coord_converter(hubs[node].coords)
+
+        if node not in x_offset_positions:
+            x_offset_positions[node] = 0
+        if node not in y_offset_positions:
+            y_offset_positions[node] = 0
+
+        if x_offset_positions[node] < -2:
+            y_offset_positions[node] -= 1
+            x_offset_positions[node] = 0
+
+        offset = (x_offset_positions[node],
+                  y_offset_positions[node])
+
+        coord = (0, 0)
+        # Check if drone goes in link
+        if '-' in node:
+            link = node.split('-', 1)
+            from_node = coord_converter(hubs[link[0]].coords)
+            to_node = coord_converter(hubs[link[1]].coords)
+            # Get middle point
+            coord = ((to_node[0] + from_node[0]) // 2,
+                     (to_node[1] + from_node[1]) // 2)
+        else:
+            coord = coord_converter(hubs[node].coords)
+
         pygame.draw.circle(
             screen,
             (50, 50, 125),
-            coord,
+            (coord[0] + offset[0] * 20,
+             coord[1] + offset[1] * 20),
             10
         )
 
@@ -170,8 +204,11 @@ def draw_drones(drones: Dict[str, str],
 
         screen.blit(
             text,
-            (coord[0] - 5, coord[1] - 2)
+            (coord[0] - 5 + offset[0] * 20,
+             coord[1] - 2 + offset[1] * 20)
         )
+
+        x_offset_positions[node] -= 1
     return
 
 

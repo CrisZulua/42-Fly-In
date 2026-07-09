@@ -11,11 +11,11 @@
 #                                                                             #
 # ########################################################################### #
 
-from src.parser import MapConfig
+from src.map_parser import MapConfig
 from src.graph import Graph
 from src.hubs import Hub
 from typing import Dict, List, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import reduce
 import heapq
 
@@ -32,14 +32,13 @@ class Drone:
     total_path_cost: float = 0
     # How deep is the drone in the network (number of hops taken)
     deepness: float = 0
-    path: list = field(default_factory=list)
 
 
 class Network:
     def __init__(self, config: MapConfig) -> None:
         # Init number of drones
         self.drones: List[Drone] = [
-           Drone(id=f"D{i}", path=["start"])
+           Drone(id=f"D{i}")
            for i in range(1, config.nb_drones + 1)
         ]
 
@@ -186,7 +185,6 @@ class Network:
                     self.graph.update_link(
                         drone.waiting_at, drone.traveling_to, -1
                     )
-                    drone.path.append(drone.traveling_to)
                     drone.waiting_at = drone.traveling_to
                     drone.traveling_to = ""
                     drone.deepness += 1
@@ -236,7 +234,6 @@ class Network:
                             )
                         self.turns_moves[turn][
                             drone.id] = f"{drone.waiting_at}-{next_step}"
-                        drone.path.append(f"{drone.waiting_at}-{next_step}")
                         moves_per_turn += 1
                         drone.deepness += 1
             turn += 1

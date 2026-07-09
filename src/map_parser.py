@@ -126,7 +126,7 @@ def validate_hubs(hubs: List[Hub]) -> None:
     # Check for only one entry start and end
     start_hubs = [hub for hub in hubs if hub.name == "start"]
     end_hubs = [hub
-                for hub in hubs if hub.name in ("goal", "impossible_goal")]
+                for hub in hubs if hub.name == "goal"]
     if len(start_hubs) != 1:
         raise ValueError("Invalid number of start hubs")
     if len(end_hubs) != 1:
@@ -170,8 +170,11 @@ def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
             if not data or (len(data) < 3):
                 raise ValueError(f"Line {num}: "
                                  "Hub not properly configured!")
-
-            name = data[0]
+            if data[0] == "impossible_goal":
+                print("impossible")
+                name = "goal"
+            else:
+                name = data[0]
             if name.find('/') != -1 or name.find(' ') != -1:
                 raise ValueError(f"Line {num}: "
                                  "Hub not properly configured! "
@@ -257,10 +260,15 @@ def get_connections_data(
                                  "Connection not properly configured!")
 
             conx = data[0].split('-', 1)
-            if not conx[0] in hub_names or not conx[0] in hub_names:
-                raise ValueError(f"Line {num}: "
-                                 "Connection from/to unknown hub"
-                                 f" -> {data[0]}")
+            if conx[0] == "impossible_goal":
+                conx[0] = "goal"
+            if conx[1] == "impossible_goal":
+                conx[1] = "goal"
+            for node in conx:
+                if node not in hub_names:
+                    raise ValueError(f"Line {num}: "
+                                     "Connection from/to unknown hub"
+                                     f" -> {data[0]}")
 
             metadata_dict = {}
             if len(data) > 1 and data[1]:
@@ -282,6 +290,7 @@ def get_connections_data(
             except ValueError as e:
                 raise ValueError(f"Line {num}: "
                                  f"Connection not properly configured! -> {e}")
+
             new_conex = (
                 conx[0],
                 conx[1],
