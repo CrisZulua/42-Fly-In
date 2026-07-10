@@ -12,9 +12,9 @@
 # ########################################################################### #
 
 import sys
-from src.map_parser import parse_map_file, MapConfig
-from src.network import Network
-from src.visuals import visuals
+from map_parser import parse_map_file, MapConfig
+from network import Network
+from visuals import visuals
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -23,9 +23,8 @@ if __name__ == "__main__":
 
     config: MapConfig = parse_map_file(sys.argv[1])
     # config: MapConfig = parse_map_file("maps/easy/01_linear_path.txt")
-    # Execute Dijkstra to find best possible paths
+    # Create network
     network: Network = Network(config)
-    network.find_shortest_paths()
 
     # Execute drone dispatcher
     schedule: str = network.dispatch_drones()

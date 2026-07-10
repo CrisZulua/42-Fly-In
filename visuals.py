@@ -1,5 +1,5 @@
-from src.network import Network
-from src.hubs import Hub
+from network import Network
+from hubs import Hub
 from typing import Dict, List, Tuple
 from collections.abc import Callable
 import sys
@@ -8,7 +8,9 @@ try:
     os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
     import pygame
 except ImportError as e:
-    print(e)
+    print(f"{e.__class__.__name__}: {e}")
+    print(" Please install the modules needed via 'make install'\n"
+          " Use of virtual environment is recommended")
     exit(1)
 
 
@@ -22,10 +24,10 @@ def create_coordinate_converter(
     Creates a function that converts graph coordinates to pygame coordinates.
 
     Args:
-        nodes: iterable of objects with .coords -> (x, y)
-        width: pygame screen width
-        height: pygame screen height
-        margin: empty border around graph
+        nodes (List[Hub]): iterable of Hub objects with .coords -> (x, y)
+        width (int): pygame screen width
+        height (int): pygame screen height
+        margin (int): empty border around graph. Default value is 100
 
     Returns:
         function converting (x, y) -> (screen_x, screen_y)
@@ -82,8 +84,13 @@ def create_coordinate_converter(
 
 
 def color_from_string(color_name: str) -> Tuple[int, int, int]:
-    """
-    Converts a color name into an RGB tuple for pygame.
+    """Converts a color name into an RGB tuple for pygame.
+
+    Args:
+        color_name (str): Color name
+
+    Returns:
+        Tuple[int, int, int]: RGB values.
     """
 
     colors = {
@@ -109,7 +116,16 @@ def draw_hubs(
         font: pygame.font.Font,
         coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
         ) -> None:
+    """Draw hubs on canvas. Size and color varies depending on hub data.
 
+    Args:
+        hubs (Dict[str, Hub]): All hubs in the graph
+        screen (pygame.Surface): Surface object on which to draw
+        font (pygame.font.Font): Font object for hub names
+        coord_converter (Callable[[Tuple[int, int]], Tuple[int, int]]): 
+            Function to convert original hub coordinates into pygame
+            valid coordinates.
+    """
     for name, hub in hubs.items():
         coords = coord_converter(hub.coords)
         color = color_from_string(hub.color)
@@ -140,6 +156,15 @@ def draw_links(
         screen: pygame.Surface,
         coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
         ) -> None:
+    """Draw links between hubs.
+
+    Args:
+        network (Network): Network object
+        screen (pygame.Surface): Surface object on which to paint
+        coord_converter (Callable[[Tuple[int, int]], Tuple[int, int]]):
+            Function to convert original hub coordinates into pygame
+            valid coordinates.
+    """
     for name, hub in network.hubs.items():
         curr_coord = coord_converter(hub.coords)
         for neighbor, link in network.graph.get_neighbors(name).items():
@@ -159,6 +184,17 @@ def draw_drones(drones: Dict[str, str],
                 font: pygame.font.Font,
                 coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
                 ) -> None:
+    """Draw drones on canvas.
+
+    Args:
+        drones (Dict[str, str]): Drone and its location.
+        hubs (Dict[str, Hub]): Hubs in the graph
+        screen (pygame.Surface): Surface object on which to paint
+        font (pygame.font.Font): Font object for drone data
+        coord_converter (Callable[[Tuple[int, int]], Tuple[int, int]]):
+            Function to convert original hub coordinates into pygame
+            valid coordinates.
+    """
     x_offset_positions: Dict[str, int] = {}
     y_offset_positions: Dict[str, int] = {}
 
@@ -213,6 +249,11 @@ def draw_drones(drones: Dict[str, str],
 
 
 def visuals(network: Network) -> None:
+    """Main loop for pygame.
+
+    Args:
+        network (Network): Network object
+    """
     # Initialize pygame
     pygame.init()
 

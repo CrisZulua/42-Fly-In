@@ -11,9 +11,9 @@
 #                                                                             #
 # ########################################################################### #
 
-from src.map_parser import MapConfig
-from src.graph import Graph
-from src.hubs import Hub
+from map_parser import MapConfig
+from graph import Graph
+from hubs import Hub
 from typing import Dict, List, Tuple
 from dataclasses import dataclass
 from functools import reduce
@@ -22,7 +22,8 @@ import heapq
 
 @dataclass
 class Drone:
-    """This class holds status data for a drone travelling through the network.
+    """This class holds status data for a drone travelling
+    through the network.
     """
     id: str
     status: str = "waiting"  # waiting, traveling, arrived
@@ -35,7 +36,24 @@ class Drone:
 
 
 class Network:
+    """Manage data regarding a network.
+
+    Attributes:
+        drones (List[Drone]): List of Drone objects.
+        graph (Graph): Graph structure (hubs names and connections).
+        hubs (Dict[str, Hub]): Hub data for every hub in the graph.
+        total_turns (int): Total number of turns until all drones arrive
+            at goal.
+        tuns_moves (List[Dict[str, str]]): Moves turn by turn.
+        node parents (Dict[str, List[str]]): Relation of hubs from best
+            paths.
+    """
     def __init__(self, config: MapConfig) -> None:
+        """Initiate an instance of Network object.
+
+        Args:
+            config (MapConfig): Configuration for the network.
+        """
         # Init number of drones
         self.drones: List[Drone] = [
            Drone(id=f"D{i}")
@@ -76,6 +94,9 @@ class Network:
                 return 0
 
     def find_shortest_paths(self) -> None:
+        """Executes Dijkstra's algorithm to find the best sorthest paths
+        and populates node_parents attribute from the class.
+        """
         from_hub = "start"
         # Keep track of the shortest path and distance to each hub
         parent: Dict[str, List[str]] = {}
@@ -118,6 +139,19 @@ class Network:
     def calculate_next_step(
             self, from_hub: str
             ) -> str | None:
+        """Calculates next step from_hub to the neighbors available.
+        It uses node_parents to backtrack the path from end goal to
+        the from_hub node.
+
+        Then checks for its neighbors wich one has link capacity and node
+        capacity.
+        Args:
+            from_hub (str): Node to travel from.
+
+        Returns:
+            str | None: Return the name of the next node if travel is
+            available. None in case no travel available between nodes.
+        """
         to_hub = "goal"
         # Check if start and destination are the same hub
         if from_hub == to_hub:
@@ -158,12 +192,21 @@ class Network:
         return None
 
     def dispatch_drones(self) -> str:
+        """Dispatch drones through the network calculating the best path
+        each turn.
+
+        It follows a discrete loop that stops when every drone arrives
+        at end goal.
+
+        Returns:
+            str: All moves by turn. Each line corresponds to a turn.
+        """
         turn: int = 0
         schedule: str = ""
         moves_per_turn: int = 0
         first: bool = True
         self.turns_moves.append({})
-
+        self.find_shortest_paths()
         # Iterate while there is at least one drone that has not arrived
         # at its destination
         while any(drone.status != "arrived" for drone in self.drones):
@@ -234,6 +277,16 @@ class Network:
         return schedule
 
     def get_statistics(self) -> Dict[str, float]:
+        """Gets statistics from the simulation.
+
+        It returns:
+        - total_turns: Total of turns the simulation took to finish.
+        - total_path_cost_: cost per drone summed.
+        - avg_cost: average cost per drone
+
+        Returns:
+            Dict[str, float]: Stat name and its value.
+        """
         stats: Dict[str, float] = {}
         # Total turns
         stats["total_turns"] = self.total_turns

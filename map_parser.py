@@ -13,12 +13,15 @@
 
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
-from src.hubs import Hub
+from hubs import Hub
 
 
 @dataclass
 class MapConfig:
-    """Class containing all data related to a Map
+    """Class containing all data related to a Map:
+    - nb_drones: Number of drones at the start node
+    - hubs: List of Hub objects one for each node
+    - connections: List of connections Tuple(from, to, max_link_capacity)
     """
     nb_drones: int
     hubs: List[Hub]
@@ -49,8 +52,7 @@ def load_map(file: str) -> List[Tuple[int, str]]:
                 map.append((num, clean_line))
         return map
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
-        exit(1)
+        raise Exception(f"{e.__class__.__name__}: {e}")
 
 
 def get_nb_drones(line: str) -> int:
@@ -149,6 +151,9 @@ def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
         map (List[Tuple[int, str]]): Map configuration file line by
         line with line numbers.
 
+        nb_drones (int): Total number of drones in the network use for
+        capacity in start and goal nodes.
+
     Raises:
         ValueError: Whenever there is a format error with the line
         being read.
@@ -240,8 +245,9 @@ def get_connections_data(
         ValueError: Whenever there is a format error with the line being read.
 
     Returns:
-        _type_: List of tuples containing the connection
-        data (from_hub, to_hub, max_link_capacity)
+        _type_: (List[Tuple[str, str, int]])
+        List of tuples containing the connection data
+        (from_hub, to_hub, max_link_capacity)
     """
     conex_list: List[Tuple[str, str, int]] = []
     hub_names = [hub.name for hub in hubs]
@@ -336,5 +342,7 @@ def parse_map_file(file: str) -> MapConfig:
             connections
         )
     except Exception as e:
-        print(f"{e.__class__.__name__}: {e}")
+        print("[ERROR] There is something wrong with the map provided: ")
+        print(f"    {file}")
+        print(f"    {e.__class__.__name__}: {e}")
         exit(1)

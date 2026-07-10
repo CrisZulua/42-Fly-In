@@ -17,12 +17,29 @@ from dataclasses import dataclass
 
 @dataclass
 class Link:
+    """Class containing link data:
+    - Max link capacity
+    - Occupancy
+    """
     max_link_capacity: int
     occupancy: int
 
 
 class Graph:
+    """This class contains data for a Graph. The data is provided as a list
+    of hub names.
+    """
+
     def __init__(self, hubs: List[str]) -> None:
+        """Initiate an instance of the Graph class
+
+        This class contains an attribute called _graph which is a dictionary.
+        Each keay is a node an its value is a dictionary with each neighbor
+        node and a Link object describing state of that connection.
+
+        Args:
+            hubs (List[str]): Hub names for all hubs for a graph
+        """
         self._graph: Dict[str, Dict[str, Link]] = {}
         for hub in hubs:
             self._graph[hub] = {}
@@ -30,6 +47,9 @@ class Graph:
     def add_neighbor(self, from_hub: str, to_hub: str, max_link: int) -> None:
         """Add a neighbor to a hub(Node). The neighbor is mirror as the
         connections are bidirectional.
+
+        Both connections share the same link object so its updated for both
+        whenever a connection is updated.
 
         Args:
             from_hub (str): Connection from hub
@@ -43,7 +63,10 @@ class Graph:
 
     def init_graph(self, conex: List[Tuple[str, str, int]]) -> None:
         """Initialize a graph from a list of connections following this
-        structure: (from, to, max_link_capacity)
+        structure: (from, to, max_link_capacity).
+
+        Before calling this function the Graph instance contains all hubs
+        names, now is time to connect them.
 
         Args:
             conex (List[Tuple[str, str, int]]): List of connections
@@ -52,7 +75,7 @@ class Graph:
             self.add_neighbor(con[0], con[1], con[2])
 
     def get_neighbors(self, hub: str) -> Dict[str, Link]:
-        """Get neighbors for a hub
+        """Get all neighbors for a hub
 
         Args:
             hub (str): Check neighbors for this hub
