@@ -22,16 +22,29 @@ import heapq
 
 @dataclass
 class Drone:
-    """This class holds status data for a drone travelling
-    through the network.
+    """Represents a drone travelling through a network.
+
+    The class stores the current state of a drone, including its position,
+    destination, travel status, arrival information, and path metrics.
+
+    Attributes:
+        id (str): Unique identifier of the drone.
+        status (str): Current state of the drone. Expected values are
+            ``"waiting"``, ``"traveling"``, or ``"arrived"``.
+        waiting_at (str): Network node where the drone is/was waiting.
+        traveling_to (str): Destination node the drone is travelling towards.
+        arrival_time (int): Time step at which the drone is expected to arrive.
+        total_path_cost (float): Accumulated cost of the path travelled by the
+            drone.
+        deepness (float): Depth of the drone in the network, measured as the
+            number of hops taken.
     """
     id: str
-    status: str = "waiting"  # waiting, traveling, arrived
+    status: str = "waiting"
     waiting_at: str = "start"
     traveling_to: str = "goal"
     arrival_time: int = 1
     total_path_cost: float = 0
-    # How deep is the drone in the network (number of hops taken)
     deepness: float = 0
 
 

@@ -18,10 +18,13 @@ from hubs import Hub
 
 @dataclass
 class MapConfig:
-    """Class containing all data related to a Map:
-    - nb_drones: Number of drones at the start node
-    - hubs: List of Hub objects one for each node
-    - connections: List of connections Tuple(from, to, max_link_capacity)
+    """Class containing all data related to a Map
+
+    Arguments:
+        nb_drones (int): Number of drones at the start node
+        hubs (List[Hub]): List of Hub objects one for each node
+        connections (List[Tuple[str, str, int]]): List of connections
+            Tuple(from, to, max_link_capacity)
     """
     nb_drones: int
     hubs: List[Hub]

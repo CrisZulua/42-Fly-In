@@ -18,12 +18,14 @@ from typing import Tuple
 @dataclass
 class Hub:
     """Class that holds information for a hub
-    name: str
-    coords: Tuple[int, int]
-    zone: str = 'normal'
-    color: str = 'none'
-    max_drones: int = 1
-    current_drones: int = 0
+
+    Attributes:
+        name (str): Name of the hub
+        coords (Tuple[int, int]): Coordinates of the hub
+        zone (str): Type of zone. Defaults to 'normal'
+        color (str): Defaults to'none'
+        max_drones (int): Capacity of hub. Defaults to 1
+        current_drones (int): State of occupancy. Defaults to 0
     """
     name: str
     coords: Tuple[int, int]  # (x, y)

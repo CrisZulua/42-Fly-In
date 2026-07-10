@@ -18,8 +18,10 @@ from dataclasses import dataclass
 @dataclass
 class Link:
     """Class containing link data:
-    - Max link capacity
-    - Occupancy
+
+    Attributes:
+        max_link_capacity (int): Link capacity
+        occupancy (Link): Drones in link
     """
     max_link_capacity: int
     occupancy: int
@@ -28,6 +30,10 @@ class Link:
 class Graph:
     """This class contains data for a Graph. The data is provided as a list
     of hub names.
+
+    Attributes:
+        _graph (Dict[str, Dict[str, Link]]): Each node has a dictionary
+        containing all of its neighbors and their link state.
     """
 
     def __init__(self, hubs: List[str]) -> None:
