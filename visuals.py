@@ -94,17 +94,17 @@ def color_from_string(color_name: str) -> Tuple[int, int, int]:
     """
 
     colors = {
-        "blue":   (70, 130, 180),   # Steel blue
-        "green":  (80, 200, 120),   # Soft green
-        "red":    (220, 80, 80),    # Warm red
-        "yellow": (240, 200, 70),   # Golden yellow
-        "orange": (240, 140, 50),   # Orange
-        "cyan":   (70, 210, 210),   # Aqua cyan
-        "purple": (160, 100, 220),  # Soft purple
-        "lime":    (150, 240, 80),  # Bright lime green
-        "magenta": (220, 80, 200),  # Pink-purple
-        "brown": (150, 100, 70),    # Brown
-        "gold": (220, 180, 60)      # Gold
+        "blue":    (60, 120, 200),    # Clean dashboard blue
+        "green":   (70, 190, 110),    # Balanced green
+        "red":     (210, 70, 80),     # Alert red
+        "yellow":  (230, 190, 50),    # Warm yellow
+        "orange":  (235, 125, 40),    # Strong orange
+        "cyan":    (50, 190, 200),    # Technical cyan
+        "purple":  (145, 85, 210),    # Deep purple
+        "lime":    (140, 220, 70),    # Bright lime
+        "magenta": (210, 70, 190),    # Strong magenta
+        "brown":   (150, 95, 60),     # Earth brown
+        "gold":    (220, 170, 40)     # Metallic gold
     }
 
     return colors.get(color_name.lower(), (180, 180, 180))
@@ -122,7 +122,7 @@ def draw_hubs(
         hubs (Dict[str, Hub]): All hubs in the graph
         screen (pygame.Surface): Surface object on which to draw
         font (pygame.font.Font): Font object for hub names
-        coord_converter (Callable[[Tuple[int, int]], Tuple[int, int]]): 
+        coord_converter (Callable[[Tuple[int, int]], Tuple[int, int]]):
             Function to convert original hub coordinates into pygame
             valid coordinates.
     """
@@ -142,7 +142,7 @@ def draw_hubs(
         text = font.render(
             name,
             True,
-            (225, 225, 225)
+            (245, 245, 245)
         )
 
         screen.blit(
@@ -226,7 +226,7 @@ def draw_drones(drones: Dict[str, str],
 
         pygame.draw.circle(
             screen,
-            (50, 50, 125),
+            (35, 45, 70),
             (coord[0] + offset[0] * 20,
              coord[1] + offset[1] * 20),
             10
@@ -235,7 +235,7 @@ def draw_drones(drones: Dict[str, str],
         text = font.render(
             drone,
             True,
-            (255, 255, 255)
+            (230, 230, 230)
         )
 
         screen.blit(
@@ -263,6 +263,7 @@ def visuals(network: Network) -> None:
     drone_font.set_bold(True)
     turn_font = pygame.font.Font(None, 36)
     turn_font.set_bold(True)
+    info_font = pygame.font.Font(None, 24)
 
     # Create window
     WIDTH = 1920
@@ -272,7 +273,7 @@ def visuals(network: Network) -> None:
                                f"{sys.argv[1].split('/', 1)[-1]}")
 
     # Define colors (RGB)
-    BACKGROUND = (25, 30, 45)
+    BACKGROUND = (18, 24, 38)
 
     # Game loop
     running = True
@@ -319,12 +320,34 @@ def visuals(network: Network) -> None:
         turn_text = turn_font.render(
             f"Turn: {turn}",
             True,
-            (255, 255, 255)
+            (210, 220, 235)
         )
 
         screen.blit(
             turn_text,
             (20, 20)
+        )
+
+        info_text = info_font.render(
+            "Space bar -> Next turn",
+            True,
+            (110, 120, 135)
+        )
+
+        screen.blit(
+            info_text,
+            (20, 60)
+        )
+
+        info_text = info_font.render(
+            "q -> Quit simulation",
+            True,
+            (110, 120, 135)
+        )
+
+        screen.blit(
+            info_text,
+            (20, 80)
         )
         # Update display
         pygame.display.flip()
