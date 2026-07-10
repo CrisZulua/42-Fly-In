@@ -104,7 +104,13 @@ def color_from_string(color_name: str) -> Tuple[int, int, int]:
         "lime":    (140, 220, 70),    # Bright lime
         "magenta": (210, 70, 190),    # Strong magenta
         "brown":   (150, 95, 60),     # Earth brown
-        "gold":    (220, 170, 40)     # Metallic gold
+        "gold":    (220, 170, 40),    # Metallic gold
+        "black":   (35, 35, 45),      # Soft black
+        "maroon":  (150, 45, 70),     # Deep red-purple
+        "darkred": (160, 45, 55),     # Dark restricted-zone red
+        "violet":  (120, 80, 200),    # Rich violet
+        "crimson": (190, 50, 90),     # Strong crimson
+        "rainbow": (255, 120, 220),   # Special goal color
     }
 
     return colors.get(color_name.lower(), (180, 180, 180))
