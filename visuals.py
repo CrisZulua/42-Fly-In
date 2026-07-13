@@ -118,7 +118,7 @@ def color_from_string(color_name: str) -> Tuple[int, int, int]:
 
 def draw_hubs(
         hubs: Dict[str, Hub],
-        screen: pygame.Surface,
+        screen: pygame.surface.Surface,
         font: pygame.font.Font,
         coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
         ) -> None:
@@ -159,7 +159,7 @@ def draw_hubs(
 
 def draw_links(
         network: Network,
-        screen: pygame.Surface,
+        screen: pygame.surface.Surface,
         coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
         ) -> None:
     """Draw links between hubs.
@@ -186,7 +186,7 @@ def draw_links(
 
 def draw_drones(drones: Dict[str, str],
                 hubs: Dict[str, Hub],
-                screen: pygame.Surface,
+                screen: pygame.surface.Surface,
                 font: pygame.font.Font,
                 coord_converter: Callable[[Tuple[int, int]], Tuple[int, int]]
                 ) -> None:

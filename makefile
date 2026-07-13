@@ -8,18 +8,22 @@ install:
 	. env/bin/activate && pip install -r requirements.txt
 
 run:
+	. env/bin/activate && \
 	python3 fly_in.py $(MAP)
 
 debug:
+	. env/bin/activate && \
 	python3 -m pdb fly_in.py $(MAP)
 
 clean:
 	rm -rf __pycache__ .mypy_cache
 
 lint:
-	flake8 $(FILES)
+	. env/bin/activate && \
+	flake8 $(FILES) && \
 	mypy $(FILES) --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	flake8 $(FILES)
+	. env/bin/activate && \
+	flake8 $(FILES) && \
 	mypy $(FILES) --strict

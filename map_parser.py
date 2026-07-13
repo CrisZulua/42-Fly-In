@@ -2,12 +2,12 @@
 # ########################################################################### #
 #   shebang: 1                                                                #
 #                                                          :::      ::::::::  #
-#   parser.py                                            :+:      :+:    :+:  #
+#   map_parser.py                                        :+:      :+:    :+:  #
 #                                                      +:+ +:+         +:+    #
 #   By: czuluaga <czuluaga@student.42malaga.com>     +#+  +:+       +#+       #
 #                                                  +#+#+#+#+#+   +#+          #
 #   Created: 2026/07/01 10:21:20 by czuluaga            #+#    #+#            #
-#   Updated: 2026/07/02 15:58:05 by czuluaga           ###   ########.fr      #
+#   Updated: 2026/07/13 12:17:01 by czuluaga           ###   ########.fr      #
 #                                                                             #
 # ########################################################################### #
 
@@ -58,11 +58,11 @@ def load_map(file: str) -> List[Tuple[int, str]]:
         raise Exception(f"{e.__class__.__name__}: {e}")
 
 
-def get_nb_drones(line: str) -> int:
+def get_nb_drones(line: Tuple[int, str]) -> int:
     """Gets the nb_drones value from line
 
     Args:
-        line (str): Expected first line in map configuration file
+        line (Tuple[int, str]): Expected first line in map configuration file
 
     Raises:
         ValueError: If there is no nb_drones in the line
@@ -70,15 +70,16 @@ def get_nb_drones(line: str) -> int:
     Returns:
         int: nb_drones value
     """
-    data = [ln.strip() for ln in line.split(':', 1)]
+    data = [ln.strip() for ln in line[1].split(':', 1)]
     if data[0] != 'nb_drones':
-        raise ValueError("Line 1: First line is not properly set!")
+        raise ValueError(f"Line {line[0]}: nb_drones line is not "
+                         "properly set or missing!")
     try:
         value = int(data[1])
         if value < 1:
-            raise ValueError("nb_drones must be >= 1")
+            raise ValueError(f"Line {line[0]}: nb_drones must be >= 1")
     except ValueError as e:
-        raise Exception(f"Line 1: {e}")
+        raise Exception(f"Line {line[0]}: {e}")
     return value
 
 
@@ -99,7 +100,7 @@ def get_metadata(metadata: str) -> Dict[str, str]:
     metadata_tokens = metadata.split(' ', 3)
 
     for item in metadata_tokens:
-        token = item.split('=')
+        token = item.split('=', 1)
         match token[0]:
             case 'zone':
                 match token[1]:
@@ -108,7 +109,10 @@ def get_metadata(metadata: str) -> Dict[str, str]:
                     case _:
                         raise ValueError(f"Unknown zone argument: {token[1]}")
             case 'color':
-                result['color'] = token[1]
+                if token[1].isalpha():
+                    result['color'] = token[1]
+                else:
+                    raise ValueError(f"Unknown color argument: {token[1]}")
             case 'max_drones':
                 result['max_drones'] = token[1]
             case 'max_link_capacity':
@@ -118,32 +122,25 @@ def get_metadata(metadata: str) -> Dict[str, str]:
     return result
 
 
-def validate_hubs(hubs: List[Hub]) -> None:
+def validate_hubs(hubs: List[Hub], new_hub: Hub) -> None:
     """Extra validation for hubs. No repeated start or end
     or repeated coordinates.
 
     Args:
         hubs (List[Hub]): List of hubs
+        new_hub (Hub): The new hub to be validated
 
     Raises:
         ValueError: In case any invalid hub is encounteredº
     """
-    # Check for only one entry start and end
-    start_hubs = [hub for hub in hubs if hub.name == "start"]
-    end_hubs = [hub
-                for hub in hubs if hub.name == "goal"]
-    if len(start_hubs) != 1:
-        raise ValueError("Invalid number of start hubs")
-    if len(end_hubs) != 1:
-        raise ValueError("Invalid number of end hubs")
+    # Check for only one entry for each hub
+    if new_hub.name in [hub.name for hub in hubs]:
+        raise ValueError(f"Hub {new_hub.name} already exists")
 
     # Check for repeated coordinates
-    coords_set: set[Tuple[int, int]] = set()
-    for hub in hubs:
-        if hub.coords in coords_set:
-            raise ValueError(f"Duplicate coordinates found for hub {hub.name}")
-        coords_set.add(hub.coords)
-    return
+    if new_hub.coords in [hub.coords for hub in hubs]:
+        raise ValueError(f"Hub {new_hub.name} has repeated coordinates "
+                         f"{new_hub.coords}")
 
 
 def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
@@ -166,6 +163,26 @@ def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
     """
     hubs: List[Hub] = []
 
+    start_hub_count = 0
+    end_hub_count = 0
+    for number, line in map:
+        if line.startswith('start_hub'):
+            start_hub_count += 1
+        elif line.startswith('end_hub'):
+            end_hub_count += 1
+
+        if start_hub_count > 1:
+            raise ValueError(f"Line {number}: There must be exactly "
+                             "one start_hub defined.")
+        if end_hub_count > 1:
+            raise ValueError(f"Line {number}: There must be exactly "
+                             "one end_hub defined.")
+
+    if start_hub_count == 0:
+        raise ValueError("There must be exactly one start_hub defined.")
+    if end_hub_count == 0:
+        raise ValueError("There must be exactly one end_hub defined.")
+
     for num, line in map:
         if line.startswith(('start_hub', 'hub', 'end_hub')):
             line_data = line.split(':', 1)[1].strip()
@@ -183,35 +200,43 @@ def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
                 name = "goal"
             else:
                 name = data[0]
-            if name.find('/') != -1 or name.find(' ') != -1:
+            if name.find('-') != -1 or name.find(' ') != -1:
                 raise ValueError(f"Line {num}: "
                                  "Hub not properly configured! "
-                                 "Name cannot contain '/' or ' '")
+                                 "Name cannot contain '-' or ' '")
             try:
                 coords = (int(data[1]), int(data[2]))
             except ValueError as e:
                 raise ValueError(f"Line {num}: "
                                  f"Hub not properly configured! -> {e}")
             metadata_dict = {}
-            if data[3] and len(data) > 3:
+            if len(data) == 4:
+                if not data[3].startswith("["):
+                    raise ValueError(f"Line {num}: "
+                                     "Hub not properly configured!"
+                                     " Metadata must be enclosed in []")
                 if not data[3].endswith("]"):
                     raise ValueError(f"Line {num}: "
-                                     "Hub not properly configured!")
+                                     "Hub not properly configured!"
+                                     " Metadata must be enclosed in []")
                 metadata = data[3].strip('[]')
                 try:
                     metadata_dict = get_metadata(metadata)
                 except ValueError as e:
                     raise ValueError(f"Line {num}: "
                                      f"Hub not properly configured! -> {e}")
-            zone = str(metadata_dict.get('zone', 'normal'))
+            max_drones: int = 1
+            zone: str = 'normal'
             color = str(metadata_dict.get('color', 'none'))
-            try:
-                max_drones = int(metadata_dict.get('max_drones', 1))
-                if max_drones < 1:
-                    raise ValueError("max_drones must be >= 1")
-            except ValueError as e:
-                raise ValueError(f"Line {num}: "
-                                 f"Hub not properly configured! -> {e}")
+            if line.startswith("hub"):
+                zone = str(metadata_dict.get('zone', 'normal'))
+                try:
+                    max_drones = int(metadata_dict.get('max_drones', 1))
+                    if max_drones < 1:
+                        raise ValueError("max_drones must be >= 1")
+                except ValueError as e:
+                    raise ValueError(f"Line {num}: "
+                                     f"Hub not properly configured! -> {e}")
             if name in ("start", "goal", "impossible_goal"):
                 max_drones = nb_drones
             new_hub = Hub(
@@ -225,12 +250,20 @@ def get_hubs_data(map: List[Tuple[int, str]], nb_drones: int) -> List[Hub]:
                 raise ValueError(f"Line {num}: "
                                  "Hub not properly configured! "
                                  "Hub already exists")
+            try:
+                validate_hubs(hubs, new_hub)
+            except Exception as e:
+                raise ValueError(f"Line {num}: {e}")
             hubs.append(new_hub)
-    try:
-
-        validate_hubs(hubs)
-    except Exception as e:
-        raise ValueError(f"Invalid hubs configuration: {e}")
+        elif not line.startswith(('connection', 'nb_drones')):
+            raise ValueError(f"Line {num}: "
+                             "Hub not properly configured! "
+                             "Use (start_hub, hub or end_hub)")
+    hub_names = [hub.name for hub in hubs]
+    if "start" not in hub_names:
+        raise ValueError("There must be exactly one 'start' named hub.")
+    if "goal" not in hub_names:
+        raise ValueError("There must be exactly one 'goal' named hub.")
     return hubs
 
 
@@ -281,9 +314,12 @@ def get_connections_data(
 
             metadata_dict = {}
             if len(data) > 1 and data[1]:
+                if not data[1].startswith("["):
+                    raise ValueError(f"Line {num}: "
+                                     "Metadata must be enclosed in []")
                 if not data[1].endswith("]"):
                     raise ValueError(f"Line {num}: "
-                                     "Connection not properly configured!")
+                                     "Metadata must be enclosed in []")
                 metadata = data[1].strip('[]')
                 try:
                     metadata_dict = get_metadata(metadata)
@@ -308,7 +344,7 @@ def get_connections_data(
 
             if new_conex in conex_list:
                 raise ValueError(f"Line {num}: "
-                                 "Connection already exist!")
+                                 f"Connection already exist! ({data[0]})")
             # All connections are bidirectional,
             # if conex a-b exist we cannot register b-a as its the same
             # Check if the connection already exists in the list
@@ -335,7 +371,7 @@ def parse_map_file(file: str) -> MapConfig:
     try:
         map = load_map(file)
 
-        nb_drones = get_nb_drones(map[0][1])
+        nb_drones = get_nb_drones(map[0])
         hubs = get_hubs_data(map, nb_drones)
         connections = get_connections_data(map, hubs)
 
