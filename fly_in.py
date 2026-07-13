@@ -7,7 +7,7 @@
 #   By: czuluaga <czuluaga@student.42malaga.com>     +#+  +:+       +#+       #
 #                                                  +#+#+#+#+#+   +#+          #
 #   Created: 2026/07/02 09:41:14 by czuluaga            #+#    #+#            #
-#   Updated: 2026/07/02 16:14:06 by czuluaga           ###   ########.fr      #
+#   Updated: 2026/07/13 14:52:47 by czuluaga           ###   ########.fr      #
 #                                                                             #
 # ########################################################################### #
 
@@ -27,8 +27,11 @@ if __name__ == "__main__":
     network: Network = Network(config)
 
     # Execute drone dispatcher
-    schedule: str = network.dispatch_drones()
-
+    try:
+        schedule: str = network.dispatch_drones()
+    except Exception as e:
+        print(f"    [ERROR] {e}")
+        exit(1)
     # Get dispatcher network statistics after dispatcher execution
     statistics = network.get_statistics()
 

@@ -7,7 +7,7 @@
 #   By: czuluaga <czuluaga@student.42malaga.com>     +#+  +:+       +#+       #
 #                                                  +#+#+#+#+#+   +#+          #
 #   Created: 2026/07/02 11:59:52 by czuluaga            #+#    #+#            #
-#   Updated: 2026/07/06 12:59:33 by czuluaga           ###   ########.fr      #
+#   Updated: 2026/07/13 14:50:52 by czuluaga           ###   ########.fr      #
 #                                                                             #
 # ########################################################################### #
 
@@ -147,6 +147,9 @@ class Network:
                         parent[neighbor] = []
                     parent[neighbor].append(curr)
                     heapq.heappush(heap, (new_dist, neighbor))
+        # Check goal os reachable, if not, raise an exception
+        if dist["goal"] == float('inf'):
+            raise Exception("Goal is unreachable from start hub.")
         self.node_parents = parent
 
     def calculate_next_step(
@@ -185,6 +188,15 @@ class Network:
                     if parent in frontier:
                         continue
                     frontier.append(parent)
+        priority_steps: List[str] = []
+
+        # Prioritize hubs with priority zones
+        for step in next_steps:
+            if self.hubs[step].zone == "priority":
+                next_steps.remove(step)
+                priority_steps.append(step)
+        # Combine priority steps with the rest of the next steps
+        next_steps = priority_steps + next_steps
 
         for step in next_steps:
             # Now we check link capacity and hub capacity

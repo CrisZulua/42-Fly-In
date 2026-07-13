@@ -232,7 +232,7 @@ def draw_drones(drones: Dict[str, str],
 
         pygame.draw.circle(
             screen,
-            (35, 45, 70),
+            (55, 65, 90),
             (coord[0] + offset[0] * 20,
              coord[1] + offset[1] * 20),
             10
