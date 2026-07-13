@@ -7,7 +7,7 @@
 #   By: czuluaga <czuluaga@student.42malaga.com>     +#+  +:+       +#+       #
 #                                                  +#+#+#+#+#+   +#+          #
 #   Created: 2026/07/02 11:59:52 by czuluaga            #+#    #+#            #
-#   Updated: 2026/07/13 14:50:52 by czuluaga           ###   ########.fr      #
+#   Updated: 2026/07/13 15:25:45 by czuluaga           ###   ########.fr      #
 #                                                                             #
 # ########################################################################### #
 
@@ -109,6 +109,9 @@ class Network:
     def find_shortest_paths(self) -> None:
         """Executes Dijkstra's algorithm to find the best sorthest paths
         and populates node_parents attribute from the class.
+
+        Raises:
+            Exception: If goal hub is not reachable
         """
         from_hub = "start"
         # Keep track of the shortest path and distance to each hub
@@ -147,7 +150,7 @@ class Network:
                         parent[neighbor] = []
                     parent[neighbor].append(curr)
                     heapq.heappush(heap, (new_dist, neighbor))
-        # Check goal os reachable, if not, raise an exception
+        # Check goal is reachable, if not, raise an exception
         if dist["goal"] == float('inf'):
             raise Exception("Goal is unreachable from start hub.")
         self.node_parents = parent
